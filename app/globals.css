@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+:root {
+  --bg-app: #F6F8FB;
+  --navy: #10233F;
+  --primary-blue: #2563EB;
+  --secondary-blue: #3B82F6;
+  --teal: #0F766E;
+  --safe: #16A34A;
+  --monitoring: #D99A06;
+  --high-risk: #EA7317;
+  --critical: #D92D20;
+  --expiry-rescue: #7C3AED;
+  --muted: #64748B;
+  --border: #E2E8F0;
+  --surface: #FFFFFF;
+}
+
+@layer base {
+  body {
+    background-color: #F6F8FB;
+    color: #10233F;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Custom delicate scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Tabular figures helper */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

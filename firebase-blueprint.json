@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with role, health district, and facility assignment",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 200 },
+        "role": { "type": "string", "enum": ["PHC_STAFF", "PHC_IN_CHARGE", "DISTRICT_OFFICER", "WAREHOUSE_OFFICER", "STATE_VIEWER"] },
+        "district": { "type": "string", "maxLength": 100 },
+        "facilityId": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "displayName", "email", "role"]
+    },
+    "TransferRecord": {
+      "title": "TransferRecord",
+      "description": "Medicine redistribution and inter-facility transfer record",
+      "type": "object",
+      "properties": {
+        "transferId": { "type": "string", "maxLength": 64 },
+        "medicineName": { "type": "string", "maxLength": 150 },
+        "quantity": { "type": "number" },
+        "sourceFacility": { "type": "string", "maxLength": 100 },
+        "destinationFacility": { "type": "string", "maxLength": 100 },
+        "status": { "type": "string", "enum": ["Awaiting District Approval", "Approved", "In Transit", "Completed", "Cancelled"] },
+        "approvedBy": { "type": "string", "maxLength": 100 },
+        "batchNumber": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["transferId", "medicineName", "quantity", "sourceFacility", "destinationFacility", "status"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable operational event and transfer lifecycle audit record",
+      "type": "object",
+      "properties": {
+        "logId": { "type": "string", "maxLength": 64 },
+        "action": { "type": "string", "maxLength": 150 },
+        "facility": { "type": "string", "maxLength": 100 },
+        "performedBy": { "type": "string", "maxLength": 100 },
+        "role": { "type": "string", "maxLength": 50 },
+        "timestamp": { "type": "string" },
+        "details": { "type": "string", "maxLength": 1000 }
+      },
+      "required": ["logId", "action", "facility", "performedBy", "role", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile with role assignment"
+    },
+    "/transfers/{transferId}": {
+      "schema": { "$ref": "#/entities/TransferRecord" },
+      "description": "Inter-PHC stock redistribution and dispatch tracking"
+    },
+    "/audit_logs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "System event and verification audit logs"
+    }
+  }
+}

@@ -1,0 +1,92 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation blueprints
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['userId', 'displayName', 'email', 'role']) &&
+        data.keys().hasOnly(['userId', 'displayName', 'email', 'role', 'district', 'facilityId', 'updatedAt']) &&
+        data.userId is string && data.userId.size() <= 128 &&
+        data.displayName is string && data.displayName.size() <= 100 &&
+        data.email is string && data.email.size() <= 200 &&
+        data.role in ['PHC_STAFF', 'PHC_IN_CHARGE', 'DISTRICT_OFFICER', 'WAREHOUSE_OFFICER', 'STATE_VIEWER'] &&
+        (!('district' in data) || (data.district is string && data.district.size() <= 100)) &&
+        (!('facilityId' in data) || (data.facilityId is string && data.facilityId.size() <= 64)) &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    function isValidTransferRecord(data) {
+      return data.keys().hasAll(['transferId', 'medicineName', 'quantity', 'sourceFacility', 'destinationFacility', 'status']) &&
+        data.keys().hasOnly(['transferId', 'medicineName', 'quantity', 'sourceFacility', 'destinationFacility', 'status', 'approvedBy', 'batchNumber', 'createdAt', 'updatedAt']) &&
+        data.transferId is string && data.transferId.size() <= 64 &&
+        data.medicineName is string && data.medicineName.size() <= 150 &&
+        data.quantity is number && data.quantity > 0 &&
+        data.sourceFacility is string && data.sourceFacility.size() <= 100 &&
+        data.destinationFacility is string && data.destinationFacility.size() <= 100 &&
+        data.status in ['Awaiting District Approval', 'Approved', 'In Transit', 'Completed', 'Cancelled'] &&
+        (!('approvedBy' in data) || (data.approvedBy is string && data.approvedBy.size() <= 100)) &&
+        (!('batchNumber' in data) || (data.batchNumber is string && data.batchNumber.size() <= 64)) &&
+        (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64)) &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    function isValidAuditLog(data) {
+      return data.keys().hasAll(['logId', 'action', 'facility', 'performedBy', 'role', 'timestamp']) &&
+        data.keys().hasOnly(['logId', 'action', 'facility', 'performedBy', 'role', 'timestamp', 'details']) &&
+        data.logId is string && data.logId.size() <= 64 &&
+        data.action is string && data.action.size() <= 150 &&
+        data.facility is string && data.facility.size() <= 100 &&
+        data.performedBy is string && data.performedBy.size() <= 100 &&
+        data.role is string && data.role.size() <= 50 &&
+        data.timestamp is string && data.timestamp.size() <= 64 &&
+        (!('details' in data) || (data.details is string && data.details.size() <= 1000));
+    }
+
+    // Collection: Users
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || exists(/databases/$(database)/documents/users/$(request.auth.uid)));
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidUserProfile(incoming());
+      allow update: if isSignedIn() && request.auth.uid == userId && isValidUserProfile(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'district', 'facilityId', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    // Collection: Transfers
+    match /transfers/{transferId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(transferId) && isValidTransferRecord(incoming());
+      allow update: if isSignedIn() && isValidId(transferId) && isValidTransferRecord(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'approvedBy', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    // Collection: Audit Logs (Append-only immutable audit trail)
+    match /audit_logs/{logId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(logId) && isValidAuditLog(incoming());
+      allow update, delete: if false;
+    }
+  }
+}

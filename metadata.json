@@ -1,0 +1,8 @@
+{
+  "name": "SwasthyaSetu AI",
+  "description": "Predict shortages. Coordinate care. Protect communities. Explainable, offline-first health resilience copilot for Primary Health Centres and district officers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
